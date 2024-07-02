@@ -1,0 +1,53 @@
+/* --------------------
+   Case Study Questions
+   --------------------*/
+
+-- 1. What is the total amount each customer spent at the restaurant?
+-- 2. How many days has each customer visited the restaurant?
+-- 3. What was the first item from the menu purchased by each customer?
+-- 4. What is the most purchased item on the menu and how many times was it purchased by all customers?
+-- 5. Which item was the most popular for each customer?
+-- 6. Which item was purchased first by the customer after they became a member?
+-- 7. Which item was purchased just before the customer became a member?
+-- 8. What is the total items and amount spent for each member before they became a member?
+-- 9.  If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
+-- 10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
+
+-- Example Query:
+/* SELECT
+  	product_id,
+    product_name,
+    price
+FROM dannys_diner.menu
+ORDER BY price DESC
+LIMIT 5; */
+
+/* SELECT sales.customer_id, sum(menu.price)
+from dannys_diner.sales
+inner join dannys_diner.menu
+on sales.product_id = menu.product_id
+group by sales.customer_id; */
+
+/* SELECT sales.customer_id, count(sales.order_date)
+from dannys_diner.sales
+group by sales.customer_id; */
+
+/* with first_purchase as (
+	select customer_id, min(order_date) as first_date
+	from dannys_diner.sales
+	group by customer_id	
+)
+
+select fp.customer_id, sales.order_date, menu.product_name
+from first_purchase fp
+join dannys_diner.sales on sales.customer_id = fp.customer_id and sales.order_date = fp.first_date
+join dannys_diner.menu on menu.product_id = sales.product_id
+order by fp.customer_id, sales.order_date */
+
+/* select menu.product_name, count(sales.product_id) as total_serves
+from dannys_diner.sales
+join dannys_diner.menu
+on sales.product_id = menu.product_id
+group by menu.product_name
+order by total_serves desc
+limit 1 */
