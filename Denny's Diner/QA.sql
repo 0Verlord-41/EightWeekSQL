@@ -72,7 +72,49 @@ on s.product_id = m.product_id
 where rn=1
 
 -- 7. Which item was purchased just before the customer became a member?
+
+With sorted as (
+	select s.customer_id, s.order_date, s.product_id
+	from sales s 
+	join members m on s.customer_id = m.customer_id
+	where s.order_date < m.join_date
+	order by s.customer_id, s.order_date desc
+), rest as(
+	select st.customer_id, st.order_date, m.product_name, 
+	row_number() over (partition by st.customer_id order by st.customer_id) as rn
+	from sorted st
+	join menu m
+	on st.product_id = m.product_id
+)
+	select customer_id, order_date, product_name 
+	from rest
+	where rn =1
+
 -- 8. What is the total items and amount spent for each member before they became a member?
+
+with Rset as (
+	select s.customer_id, s.order_date, s.product_id
+	from sales s
+	join members m on s.customer_id = m.customer_id
+	where s.order_date < m.join_date
+)
+	
+select r.customer_id, count(r.product_id), sum(m.price)
+from Rset r
+join menu m on r.product_id = m.product_id
+group by r.customer_id
+
+-- Subquery method	
+select r.customer_id, count(r.product_id), sum(m.price)
+from (
+	select s.customer_id, s.order_date, s.product_id
+	from sales s
+	join members m on s.customer_id = m.customer_id
+	where s.order_date < m.join_date
+	) r
+join menu m on r.product_id = m.product_id
+group by r.customer_id
+
 -- 9.  If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
 -- 10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
 
