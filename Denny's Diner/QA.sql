@@ -32,8 +32,21 @@ join menu m on m.product_id = s.product_id
 order by fp.customer_id, s.order_date
 
 -- 4. What is the most purchased item on the menu and how many times was it purchased by all customers?
-
-
+with ProdCount as (
+	select s.product_id, m.product_name, count(s.product_id) as freq
+	from sales s
+	join menu m 
+	on s.product_id = m.product_id
+	group by s.product_id, m.product_name
+	order by freq desc
+	limit 1
+)
+select s.customer_id,p.product_name, count(s.product_id) as NumberOfOrders
+from sales s
+join ProdCount p
+on s.product_id = p.product_id
+group by s.customer_id, p.product_name
+order by s.customer_id
 
 -- 5. Which item was the most popular for each customer?
 
@@ -116,8 +129,67 @@ join menu m on r.product_id = m.product_id
 group by r.customer_id
 
 -- 9.  If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
+
+-- method 1
+with ActualCount as ( 
+	select customer_id, product_id,
+	case
+		when product_id = 1 then 2*count(product_id)
+		else count(product_id)
+	end as newCount
+	from sales
+	group by customer_id, product_id
+	order by customer_id, product_id
+)
+
+select a.customer_id, sum(m.price * a.newcount)*10 
+from ActualCount a
+join menu m
+on a.product_id = m.product_id
+group by a.customer_id
+
+-- method 2
+
+with Purchasepoints as (
+	select s.customer_id, s.product_id, m.product_name,
+	case
+		when s.product_id=1 then m.price*2*10
+		else m.price*10
+	end as purchasepoints
+	from sales s
+	join menu m
+	on s.product_id = m.product_id
+	order  by s.customer_id, s.product_id
+)
+
+select  p.customer_id, sum(p.purchasepoints) as TotalPoints
+from Purchasepoints p
+group by p.customer_id
+
 -- 10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
 
+with Timeframe as (
+	select s.customer_id, s.order_date, m.join_date, s.product_id
+	from sales s
+	join members m
+	on s.customer_id= m.customer_id
+	where s.order_date < '2021-02-01'
+),Purchasepoints as (
+	select tf.customer_id, tf.product_id, tf.order_date, tf.join_date, m.product_name,
+	case
+		when tf.order_date between tf.join_date and tf.join_date + interval '6 day' then m.price*2*10 
+		else m.price*10
+	end as purchasepoints
+	from Timeframe tf
+	join menu m
+	on tf.product_id = m.product_id
+	order  by tf.customer_id, tf.product_id
+)
+
+select customer_id, sum(purchasepoints)
+from Purchasepoints
+group by customer_id
+order by customer_id
 
 /* select menu.product_name, count(sales.product_id) as total_serves
 from dannys_diner.sales
